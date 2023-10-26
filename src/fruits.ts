@@ -58,37 +58,53 @@ export const fruits = [
     img: "watermelon.png",
     origin: [0.5, 0.5],
   },
-];
+].map((fruit, index) => ({
+  ...fruit,
+  index,
+  texture: BaseTexture.from(fruit.img),
+}));
 
 const SCALE = 0.2;
 
-export async function createFruit(
-  def: (typeof fruits)[number],
-  context: Context
-) {
-  const texture = BaseTexture.from(def.img);
-  const sprite = Sprite.from(texture);
+export type Fruit = {
+  sprite: Sprite;
+  rigidBody: RigidBody;
+  name: string;
+  index: number;
+  remove: () => void;
+};
+
+export function createFruit(def: (typeof fruits)[number], context: Context) {
+  const sprite = Sprite.from(def.texture);
   sprite.scale.set(SCALE);
   sprite.anchor.set(def.origin[0], def.origin[1]);
 
-  return new Promise<{
-    sprite: Sprite;
-    rigidBody: RigidBody;
-  }>((resolve) => {
-    texture.on("loaded", () => {
-      const rigidBodyDesc =
-        context.RAPIER.RigidBodyDesc.dynamic().setTranslation(0.0, 0.0);
-      const rigidBody = context.world.createRigidBody(rigidBodyDesc);
+  const rigidBodyDesc = context.RAPIER.RigidBodyDesc.dynamic().setTranslation(
+    0.0,
+    0.0
+  );
+  const rigidBody = context.world.createRigidBody(rigidBodyDesc);
 
-      const colliderDesc = context.RAPIER.ColliderDesc.ball(texture.width / 2 * SCALE);
-      context.world.createCollider(colliderDesc, rigidBody).setTranslation({
-        x: def.origin[0] * texture.width,
-        y: def.origin[1] * texture.height,
-      });
-      rigidBody.addForce(new context.RAPIER.Vector2(3.0, 0.0), true);
-      context.app.stage.addChild(sprite);
-
-      resolve({ sprite, rigidBody });
-    });
+  const colliderDesc = context.RAPIER.ColliderDesc.ball(
+    (def.texture.width / 2) * SCALE
+  );
+  const collider = context.world.createCollider(colliderDesc, rigidBody);
+  collider.setTranslation({
+    x: def.origin[0] * def.texture.width,
+    y: def.origin[1] * def.texture.height,
   });
+  collider.setActiveEvents(context.RAPIER.ActiveEvents.COLLISION_EVENTS);
+  rigidBody.addForce(new context.RAPIER.Vector2(3.0, 0.0), true);
+  context.app.stage.addChild(sprite);
+
+  return {
+    sprite,
+    rigidBody,
+    name: def.name,
+    index: fruits.indexOf(def),
+    remove: () => {
+      context.world.removeRigidBody(rigidBody);
+      context.app.stage.removeChild(sprite);
+    },
+  };
 }
