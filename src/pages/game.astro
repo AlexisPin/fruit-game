@@ -1,0 +1,10 @@
+---
+import Board from "../components/Board.svelte";
+import Layout from "../components/Layout.astro";
+---
+
+<Layout>
+  <main class="flex items-stretch w-screen h-screen">
+    <Board client:only />
+  </main>
+</Layout>

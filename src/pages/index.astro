@@ -1,18 +1,8 @@
 ---
-
+import Lobby from '../components/Lobby.svelte'
 ---
 
-<html lang="en">
-	<head>
-		<meta charset="utf-8" />
-		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-		<meta name="viewport" content="width=device-width" />
-		<meta name="generator" content={Astro.generator} />
-		<title>Astro</title>
-	</head>
-	<body>
-
-		<canvas id="game-canvas" class="w-screen h-screen" width="800" height="600"></canvas>
-	</body>
-	<script src="../game.ts" />
-</html>
+<div class="flex flex-col items-center gap-1 justify-center h-screen">
+  <h1 class="text-2xl text-center mb-8">Multiplayer Suika Game</h1>
+  <Lobby client:load />
+</div>
