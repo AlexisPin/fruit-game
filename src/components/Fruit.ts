@@ -1,6 +1,6 @@
 import { BaseTexture, Sprite } from "pixi.js";
 import type { BoardContext } from "./Board.svelte";
-import type { RigidBody, Vector2 } from "@dimforge/rapier2d";
+import type { RigidBody, Vector2, World } from "@dimforge/rapier2d";
 
 export const enum FruitType {
   Cherry = 0,
@@ -79,34 +79,55 @@ export const fruits = [
 }));
 
 export class Fruit {
+  static restoreFruits(
+    fruit_data: Map<number, FruitType>,
+    world: World,
+    context: BoardContext
+  ) {
+    context.fruits.clear();
+    for (const [handle, type] of fruit_data) {
+      const def = fruits[type];
+
+      /* Sprite */
+      const sprite = Sprite.from(def.texture);
+      sprite.scale.set(Fruit.SCALE);
+      sprite.anchor.set(...def.origin);
+      context.app.stage.addChild(sprite);
+
+      const collier = world.getCollider(handle);
+      const rigidBody = collier.parent()!;
+
+      const fruit = new Fruit(sprite,type, rigidBody, handle, context);
+
+      context.fruits.set(handle, fruit);
+      return fruit;
+    }
+  }
+
   static SCALE = 0.2;
 
-  sprite: Sprite;
-  rigidBody: RigidBody;
-  handle: number;
-
-  constructor(
-    public type: FruitType,
+  static create(
+    type: FruitType,
     position: Vector2,
-    private context: BoardContext
-  ) {
+    context: BoardContext
+  ): Fruit {
     const def = fruits[type];
 
     /* Sprite */
-    this.sprite = Sprite.from(def.texture);
-    this.sprite.scale.set(Fruit.SCALE);
-    this.sprite.anchor.set(...def.origin);
-    this.context.app.stage.addChild(this.sprite);
+    const sprite = Sprite.from(def.texture);
+    sprite.scale.set(Fruit.SCALE);
+    sprite.anchor.set(...def.origin);
+    context.app.stage.addChild(sprite);
 
     /* RigidBody */
-    this.rigidBody = context.world.createRigidBody(
+    const rigidBody = context.world.createRigidBody(
       context.RAPIER.RigidBodyDesc.dynamic().setTranslation(0.0, 0.0)
     );
-    this.rigidBody.setTranslation(position, true);
+    rigidBody.setTranslation(position, true);
 
     const collider = context.world.createCollider(
       context.RAPIER.ColliderDesc.ball((def.texture.width / 2) * Fruit.SCALE),
-      this.rigidBody
+      rigidBody
     );
     collider.setTranslation({
       x: def.origin[0] * def.texture.width,
@@ -115,9 +136,20 @@ export class Fruit {
     collider.setActiveEvents(context.RAPIER.ActiveEvents.COLLISION_EVENTS);
 
     /* Fruit Map */
-    this.handle = collider.handle;
-    this.context.fruits.set(this.handle, this);
+    const handle = collider.handle;
+
+    const fruit = new Fruit(sprite,type, rigidBody, handle, context);
+    context.fruits.set(handle, fruit);
+    return fruit;
   }
+
+  constructor(
+    public sprite: Sprite,
+    public type: FruitType,
+    public rigidBody: RigidBody,
+    public handle: number,
+    public context: BoardContext
+  ) {}
 
   get next_fruit() {
     if (this.type === FruitType.Watermelon) return null;

@@ -11,7 +11,7 @@
       method: "POST",
     });
     const code = await res.text();
-    location.href = `/game?code=${code}`;
+    location.href = `/game?code=${code}&name=${name}`;
   }}>Create Game</button
 >
 <hr class="w-96" />
@@ -36,7 +36,7 @@
       return;
     }
     const code = await res.text();
-    location.href = `/game?code=${code}`;
+    location.href = `/game?code=${code}&name=${name}`;
   }}>Join Game</button
 >
 <hr class="w-96" />
@@ -53,7 +53,7 @@
       return;
     }
     const code = await res.text();
-    location.href = `/game?code=${code}`;
+    location.href = `/game?code=${code}&name=${name}`;
   }}>Find Random lobby</button
 >
 

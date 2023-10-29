@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1.0.75"
 axum = { version = "0.6.20", features = ["ws", "macros"] }
 fastrand = "2.0.1"
 speedy = "0.8.6"

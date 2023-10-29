@@ -1,10 +1,8 @@
 ---
-import Board from "../components/Board.svelte";
 import Layout from "../components/Layout.astro";
+import Game from "../components/Game.svelte";
 ---
 
 <Layout>
-  <main class="flex items-stretch w-screen h-screen">
-    <Board client:only />
-  </main>
+  <Game client:only />
 </Layout>

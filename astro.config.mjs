@@ -8,6 +8,11 @@ import svelte from "@astrojs/svelte";
 export default defineConfig({
   integrations: [tailwind(), svelte()],
   vite: {
-    plugins: [wasm()]
-  }
+    plugins: [wasm()],
+    server: {
+      watch: {
+        ignored: ["**/backend/**"],
+      },
+    },
+  },
 });

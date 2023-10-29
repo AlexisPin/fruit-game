@@ -8,15 +8,34 @@
 </script>
 
 <script lang="ts">
-  import { Application } from "pixi.js";
-  import { onMount } from "svelte";
+  import { Application, RAD_TO_DEG } from "pixi.js";
+  import { createEventDispatcher, onMount } from "svelte";
   import { DebugRenderer } from "./DebugRenderer";
-  import { World } from "@dimforge/rapier2d";
+  import RAPIER, { World } from "@dimforge/rapier2d";
   import { createWorld } from "./world";
   import { Fruit, FruitType } from "./Fruit";
+  import type { BoardState } from "./ws";
+
+  export let other = false;
+
+  export function updateBoard(board: BoardState) {
+    const world = RAPIER.World.restoreSnapshot(board.rapier_state);
+    context = {
+      RAPIER: context.RAPIER,
+      app: context.app,
+      world,
+      fruits: new Map(),
+    };
+    Fruit.restoreFruits(board.fruit_data, world, context);
+  }
+
+  const dispatch = createEventDispatcher<{
+    drop: BoardState;
+  }>();
 
   const DEBUG = true;
 
+  let context: BoardContext;
   let view: HTMLCanvasElement;
   let container: HTMLDivElement;
 
@@ -25,7 +44,7 @@
     let on_pointer_up: (event: PointerEvent) => void;
     const app = new Application({
       backgroundColor: 0x1099bb,
-      resizeTo: window,
+      resizeTo: container,
       view,
     });
     app.stage.scale.set(2);
@@ -41,7 +60,7 @@
         app.stage.addChild(debug_renderer);
       }
 
-      const context: BoardContext = {
+      context = {
         RAPIER,
         world,
         app,
@@ -50,10 +69,28 @@
 
       /* Drop fruit */
       on_pointer_up = (e) => {
-        const x = app.renderer.events.pointer.x / app.stage.scale.x;
-        new Fruit(FruitType.Cherry, { x, y: 50 }, context);
+        if (e.button === 0) {
+          const x = (e.clientX - view.offsetLeft) / app.stage.scale.x;
+          Fruit.create(FruitType.Cherry, { x, y: 50 }, context);
+        } else if (e.button === 2) {
+          const rapier_state = world.takeSnapshot();
+          const fruit_data = new Map(
+            [...context.fruits.values()].map((fruit) => [
+              fruit.handle,
+              fruit.type,
+            ])
+          );
+
+          dispatch("drop", {
+            rapier_state,
+            fruit_data,
+          });
+        }
       };
-      view.addEventListener("pointerup", on_pointer_up);
+
+      if (!other) {
+        view.addEventListener("pointerup", on_pointer_up);
+      }
 
       const event_queue = new RAPIER.EventQueue(true);
 
@@ -75,7 +112,7 @@
           fruit1.destroy();
           fruit2.destroy();
 
-          new Fruit(new_type, midpoint, context);
+          Fruit.create(new_type, midpoint, context);
         });
 
         for (const fruit of context.fruits.values()) {
@@ -96,6 +133,6 @@
   });
 </script>
 
-<div class="flex-1" bind:this={container}>
+<div class="flex-1 w-1/2" bind:this={container}>
   <canvas bind:this={view} class="w-full h-full" />
 </div>
